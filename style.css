@@ -94,3 +94,13 @@ button:focus-visible {
     background-color: #f9f9f9;
   }
 }
+.mapboxgl-ctrl-attrib {
+  display: none;
+}
+
+.changeColor {
+  color: black;
+}
+.changeColor:hover {
+  color: white;
+}

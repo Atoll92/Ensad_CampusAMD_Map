@@ -1,104 +1,145 @@
 import GeoJSON from 'ol/format/GeoJSON.js';
-import Map from 'ol/Map.js';
-import OSM from 'ol/source/OSM.js';
-import TileLayer from 'ol/layer/Tile.js';
-import Vector from 'ol/source/Vector.js';
-import View from 'ol/View.js';
-import { useGeographic } from 'ol/proj';
 import { Vector as VectorLayer } from 'ol/layer.js';
-import { Fill, Stroke, Style, Circle as CircleStyle } from 'ol/style.js';
+import mapboxgl from 'mapbox-gl';
 
 document.addEventListener('DOMContentLoaded', function () {
-  // Call useGeographic() to set up the projection for geographic coordinates
-  useGeographic();
+  mapboxgl.accessToken = 'pk.eyJ1IjoiZGdjb2Jvc3MiLCJhIjoiY2xzY2JnajIzMGZsNzJpcGM4b3l5OWttaCJ9.1GzkF8EERgQ5u1jkmP3C7w';
+  const hoveredCircleTable = document.createElement('table');
+  hoveredCircleTable.classList.add('hovered-circle-table');
+  document.body.appendChild(hoveredCircleTable);
 
-  const vectorSource = new Vector({
+  let hoveredCircleProperties = {};
+  const vectorSource = new VectorLayer({
     url: 'CampusData.geojson',
     format: new GeoJSON(),
     wrapX: true,
   });
 
-  const view = new View({
+  const map = new mapboxgl.Map({
+    container: 'map',
+    style: 'mapbox://styles/mapbox/dark-v10',
     center: [2.349014, 48.864716],
     zoom: 11,
   });
 
-  const vectorLayer = new VectorLayer({
-    source: vectorSource,
-    style: new Style({
-      image: new CircleStyle({
-        radius: 7,
-        fill: new Fill({ color: '#40549e' }),
-        stroke: new Stroke({ color: 'black', width: 1 }),
-      }),
-    }),
-  });
+  let hoveredFeatureId = null;
 
-  const darkTileLayer = new TileLayer({
-    source: new OSM({
-      url: 'https://{a-c}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png'
-    })
-  });
+  map.on('load', function () {
+    map.addSource('vectorSource', {
+      type: 'geojson',
+      data: 'CampusData.geojson',
+    });
 
-  const map = new Map({
-    layers: [
-      darkTileLayer,
-      vectorLayer,
-    ],
-    target: document.getElementById('map'),
-    view: view
-  });
+    map.addLayer({
+      id: 'vectorLayer',
+      type: 'circle',
+      source: 'vectorSource',
+      paint: {
+        'circle-radius': 7,
+        'circle-color': '#40549e',
+        'circle-stroke-color': [
+          'case',
+          ['==', ['get', 'id'], hoveredFeatureId],
+          'yellow', // Yellow stroke color for hovered circle
+          'black' // Default stroke color
+        ],
+        'circle-stroke-width': 1,
+      },
+    });
 
-  // Set the background color of the map container to dark blue
-  map.getTargetElement().style.backgroundColor = '#2c3e50';
+    map.on('mousemove', function (e) {
+      const features = map.queryRenderedFeatures(e.point);
+      if (features.length > 0) {
+        const hoveredFeature = features[0];
+        const hoveredFeatureId = hoveredFeature.properties.id;
+        if (hoveredFeature.layer.type === 'circle') {
+          hoveredCircleProperties = hoveredFeature.properties;
+          updateHoveredCircleTable();
+        } // Define hoveredFeatureId here
+        if (hoveredFeatureId !== hoveredFeatureId) {
+          if (hoveredFeatureId) {
+            map.setFeatureState(
+              { source: 'vectorSource', id: hoveredFeatureId },
+              { hover: false }
+            );
+          }
+          map.setFeatureState(
+            { source: 'vectorSource', id: hoveredFeatureId },
+            { hover: true }
+          );
+        }
 
-  let selected = null;
+        
+      }
+    });
 
-  map.on('pointermove', function (ev) {
-    if (selected !== null) {
-      selected.setStyle(new Style({
-        image: new CircleStyle({
-          radius: 7,
-          fill: new Fill({ color: '#40549e' }),
-          stroke: new Stroke({ color: 'black', width: 1 }),
-          
-        }),
-      }));
-      selected = null;
-    }
+    // map.on('mousemove', function (e) {
+    //   const features = map.queryRenderedFeatures(e.point);
+    //   if (features.length > 0) {
+    //     const hoveredFeature = features[0];
+    //     if (hoveredFeature.layer.type === 'circle') {
+    //       hoveredCircleProperties = hoveredFeature.properties;
+    //       updateHoveredCircleTable();
+    //     }
+    //   }
+    // });
 
-    map.forEachFeatureAtPixel(ev.pixel, function (feature) {
-      feature.setStyle(new Style({
-        image: new CircleStyle({
-          radius: 10, // Increase the radius when hovering
-          fill: new Fill({ color: '#6ae759' }), // Change fill color on hover
-          stroke: new Stroke({ color: 'black', width: 1 }),
-          cursor:'pointer',
-        }),
-      }));
-      selected = feature;
-      return true;
+
+    map.on('mouseleave', function () {
+      
+      clearHoveredCircleTable();
+      if (hoveredFeatureId) {
+        map.setFeatureState(
+          { source: 'vectorSource', id: hoveredFeatureId },
+          { hover: false }
+        );
+        hoveredFeatureId = null;
+      }
     });
   });
 
-  map.on('pointerleave', function () {
-    if (selected !== null) {
-      selected.setStyle(new Style({
-        image: new CircleStyle({
-          radius: 7,
-          fill: new Fill({ color: '#40549e' }),
-          stroke: new Stroke({ color: 'black', width: 1 }),
-        }),
-      }));
-      selected = null;
+  // Function to update the HTML table with hovered feature properties
+  function updateHoveredFeatureTable(properties) {
+    const table = document.getElementById('hovered-feature-table');
+
+    // Clear existing table content
+    table.innerHTML = '';
+
+    // Create header row
+    const headerRow = document.createElement('tr');
+    for (const key in properties) {
+      const headerCell = document.createElement('th');
+      headerCell.textContent = key;
+      headerRow.appendChild(headerCell);
     }
-  });
+    table.appendChild(headerRow);
 
-  // animate the map
-  function animate() {
-    map.render();
-    window.requestAnimationFrame(animate);
+    // Create data row
+    const dataRow = document.createElement('tr');
+    for (const key in properties) {
+      const dataCell = document.createElement('td');
+      dataCell.textContent = properties[key];
+      dataRow.appendChild(dataCell);
+    }
+    table.appendChild(dataRow);
   }
-  animate();
 
+  function updateHoveredCircleTable() {
+    hoveredCircleTable.innerHTML = '';
+    for (const [key, value] of Object.entries(hoveredCircleProperties)) {
+      const row = document.createElement('tr');
+      const cellKey = document.createElement('td');
+      cellKey.textContent = key;
+      const cellValue = document.createElement('td');
+      cellValue.textContent = value;
+      row.appendChild(cellKey);
+      row.appendChild(cellValue);
+      hoveredCircleTable.appendChild(row);
+    }
+  }
+
+  function clearHoveredCircleTable() {
+    hoveredCircleProperties = {};
+    hoveredCircleTable.innerHTML = '';
+  }
 });

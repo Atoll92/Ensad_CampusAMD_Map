@@ -3,18 +3,26 @@
   <head>
     <meta charset="UTF-8">
     <title>ENSAD CAMPUS MAP</title>
-    <link rel="stylesheet" href="node_modules/ol/ol.css">
+    <!-- <link rel="stylesheet" href="node_modules/ol/ol.css"> -->
+    <link
+      rel="stylesheet"
+      href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-directions/v4.1.1/mapbox-gl-directions.css"
+      type="text/css"
+    />
     <style>
       .map {
         width: 100%;
         height: 800px;
       }
+      .mapboxgl-ctrl-attrib {
+  display: none;
+}
     </style>
   </head>
   <body>
     <div id="map" class="map"></div>
     
-
+    <table id="hovered-feature-table"></table>
     <script type="module" src="main.js"></script>
   </body>
 </html>
