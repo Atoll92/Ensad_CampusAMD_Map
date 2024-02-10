@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const hoveredPointTable = createTable('hovered-point-table');
 
     let hoveredCircleProperties = {};
+    let campusDataFeatures = [];
 
     const map = new mapboxgl.Map({
         container: 'map',
@@ -38,6 +39,14 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             },
         });
+
+        map.on('data', function (e) {
+          if (e.sourceId === 'vectorSource') {
+              campusDataFeatures = map.querySourceFeatures('vectorSource');
+              updateCampusDataTable();
+              console/log("campusDataFeatures" + campusDataFeatures)
+          }
+      });
 
         map.on('mousemove', function (e) {
             const features = map.queryRenderedFeatures([
@@ -111,37 +120,52 @@ document.addEventListener('DOMContentLoaded', function () {
     function createTable(className) {
         const table = document.createElement('table');
         table.classList.add(className);
+        table.style.borderCollapse = 'collapse';
         document.body.appendChild(table);
         return table;
     }
 
     function updateHoveredCircleTable() {
         hoveredCircleTable.innerHTML = '';
+    
+        // Define the columns to include
+        const columnsToInclude = ['nom_etablissement', 'adresse', 'ville', 'code_postal', 'type_etablissement', 'mode', 'metiers_art', 'design'];
+    
+        // Create header row
         const headerRow = document.createElement('tr');
-        headerRow.style.borderBottom = '1px solid #ccc';
+        headerRow.style.color = '#40549e';
+        headerRow.style.fontSize = '15px';
+        headerRow.style.marginTop = '15px';
 
-        const valueRow = document.createElement('tr');
-
-        for (const [key, value] of Object.entries(hoveredCircleProperties)) {
+        columnsToInclude.forEach(column => {
             const headerCell = document.createElement('th');
-            headerCell.textContent = key;
-            headerCell.style.padding = '8px';
-            headerCell.style.textAlign = 'center';
-            headerCell.style.borderBottom = '1px solid #ccc';
-            headerCell.style.backgroundColor = 'white';
+            headerCell.textContent = column;
             headerRow.appendChild(headerCell);
-
-            const valueCell = document.createElement('td');
-            valueCell.textContent = value;
-            valueCell.style.padding = '8px';
-            valueCell.style.textAlign = 'center';
-            valueRow.appendChild(valueCell);
-        }
-
+        });
         hoveredCircleTable.appendChild(headerRow);
-        hoveredCircleTable.appendChild(valueRow);
-        valueRow.style.borderBottom = '1px solid #ccc';
+    
+        // Create rows for each feature
+        const allFeatures = [hoveredCircleProperties, ...campusDataFeatures.map(feature => feature.properties)];
+        allFeatures.forEach((featureProperties, index) => {
+            const valueRow = document.createElement('tr');
+            columnsToInclude.forEach(column => {
+                const valueCell = document.createElement('td');
+                valueCell.textContent = featureProperties[column] || ''; // Handle cases where the property may be undefined
+                valueRow.appendChild(valueCell);
+            });
+            
+            // Style the first row (currently hovered feature) differently
+            if (index === 0) {
+                valueRow.style.backgroundColor = 'white'; // Light gray background
+                valueRow.style.fontWeight = 'bold';
+                valueRow.style.border = 'solid 1px black'; // Bold font weight
+            }
+            
+            hoveredCircleTable.appendChild(valueRow);
+        });
     }
+    
+  
 
     function updateHoveredFeatureTable(properties) {
         const table = document.getElementById('hovered-feature-table');
@@ -156,4 +180,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         table.appendChild(dataRow);
     }
+
+    
+
 });
