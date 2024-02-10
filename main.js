@@ -36,7 +36,7 @@ document.addEventListener('DOMContentLoaded', function () {
           paint: {
               'circle-radius': 7,
               'circle-color': '#40549e',
-              'circle-stroke-color': 'white', // Yellow stroke color for hovered circle
+              'circle-stroke-color': 'black', // Yellow stroke color for hovered circle
               'circle-stroke-width': 1,
             'circle-opacity': 0.8,
               'circle-transition': {
@@ -93,7 +93,7 @@ document.addEventListener('DOMContentLoaded', function () {
           popup.setLngLat(coordinates).setHTML(description).addTo(map);
           console.log('Hovered Feature ID:', hoveredFeatureId);
 
-          map.setPaintProperty('vectorLayer', 'circle-color', ['case', ['==', ['get', 'nom_court'], hoveredFeatureId], 'white', '#40549e']), {
+          map.setPaintProperty('vectorLayer', 'circle-stroke-color', ['case', ['==', ['get', 'nom_court'], hoveredFeatureId], 'white', '#40549e']), {
             transition: { duration: 3000 } // Transition duration in milliseconds
           };
           map.setPaintProperty('vectorLayer', 'circle-radius', ['case', ['==', ['get', 'nom_court'], hoveredFeatureId], 9, 7]), {
