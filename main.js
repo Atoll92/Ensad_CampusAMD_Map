@@ -17,7 +17,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   const map = new mapboxgl.Map({
     container: 'map',
-    style: 'mapbox://styles/mapbox/dark-v10',
+    style: 'mapbox://styles/dgcoboss/clsf6yac1008601qxfmtfhiu6',
     center: [2.349014, 48.864716],
     zoom: 11,
   });
