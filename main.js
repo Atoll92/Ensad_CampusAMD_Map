@@ -1,212 +1,159 @@
-import GeoJSON from 'ol/format/GeoJSON.js';
-import { Vector as VectorLayer } from 'ol/layer.js';
 import mapboxgl from 'mapbox-gl';
-import { Popup } from 'mapbox-gl';
 
 document.addEventListener('DOMContentLoaded', function () {
-  mapboxgl.accessToken = 'pk.eyJ1IjoiZGdjb2Jvc3MiLCJhIjoiY2xzY2JnajIzMGZsNzJpcGM4b3l5OWttaCJ9.1GzkF8EERgQ5u1jkmP3C7w';
+    mapboxgl.accessToken = 'pk.eyJ1IjoiZGdjb2Jvc3MiLCJhIjoiY2xzY2JnajIzMGZsNzJpcGM4b3l5OWttaCJ9.1GzkF8EERgQ5u1jkmP3C7w';
 
-  const hoveredCircleTable = document.createElement('table');
-  hoveredCircleTable.classList.add('hovered-circle-table');
-  document.body.appendChild(hoveredCircleTable);
+    const hoveredCircleTable = createTable('hovered-circle-table');
+    const hoveredPointTable = createTable('hovered-point-table');
 
-  const hoveredPointTable = document.createElement('table');
-  hoveredPointTable.classList.add('hovered-point-table');
-  document.body.appendChild(hoveredPointTable);
+    let hoveredCircleProperties = {};
 
-  let hoveredCircleProperties = {};
+    const map = new mapboxgl.Map({
+        container: 'map',
+        style: 'mapbox://styles/dgcoboss/clsf6yac1008601qxfmtfhiu6',
+        center: [2.349014, 48.864716],
+        zoom: 10,
+        projection: 'mercator',
+    });
 
-  const map = new mapboxgl.Map({
-      container: 'map',
-      style: 'mapbox://styles/dgcoboss/clsf6yac1008601qxfmtfhiu6',
-      center: [2.349014, 48.864716],
-      zoom: 11,
-  });
-
-  map.on('load', function () {
-      map.addSource('vectorSource', {
-          type: 'geojson',
-          data: 'CampusData.geojson',
-      });
-
-      map.addLayer({
-          id: 'vectorLayer',
-          type: 'circle',
-          source: 'vectorSource',
-          paint: {
-              'circle-radius': 7,
-              'circle-color': '#40549e',
-              'circle-stroke-color': 'black', // Yellow stroke color for hovered circle
-              'circle-stroke-width': 1,
-            'circle-opacity': 0.8,
-              'circle-transition': {
-                duration: 300, // Transition duration in milliseconds
-                delay: 0 // Transition delay in milliseconds
-            }
-          },
-      });
-
-      map.on('mousemove', function (e) {
-          // const features = map.queryRenderedFeatures(e.point);
-          const features = map.queryRenderedFeatures([
-            [e.point.x - 5, e.point.y - 5], // Decrease x and y by 5 pixels
-            [e.point.x + 5, e.point.y + 5]  // Increase x and y by 5 pixels
-        ]);
-          if (features.length > 0) {
-              const hoveredFeature = features[0];
-              const hoveredPointProperties = hoveredFeature.properties;
-              updateHoveredFeatureTable(hoveredPointProperties);
-              if (hoveredFeature.layer.type === 'circle') {
-                  hoveredCircleProperties = hoveredFeature.properties;
-                  updateHoveredCircleTable();
-              }
-          }
-      });
-
-      // Create a popup, but don't add it to the map yet.
-      const popup = new mapboxgl.Popup({
-        closeButton: false,
-        closeOnClick: false
+    map.on('load', function () {
+        map.addSource('vectorSource', {
+            type: 'geojson',
+            data: 'CampusData.geojson',
         });
 
-      map.on('mouseenter', 'vectorLayer', (e) => {
-          // Change the cursor style as a UI indicator.
-          map.getCanvas().style.cursor = 'pointer';
+        map.addLayer({
+            id: 'vectorLayer',
+            type: 'circle',
+            source: 'vectorSource',
+            paint: {
+                'circle-radius': 7,
+                'circle-color': '#40549e',
+                'circle-stroke-color': 'black',
+                'circle-stroke-width': 1,
+                'circle-opacity': 0.8,
+                'circle-transition': {
+                    duration: 300,
+                    delay: 0
+                }
+            },
+        });
 
-          const hoveredFeature = e.features[0];
-          const hoveredFeatureId = hoveredFeature.properties.nom_court;
-          
+        map.on('mousemove', function (e) {
+            const features = map.queryRenderedFeatures([
+                [e.point.x - 5, e.point.y - 5],
+                [e.point.x + 5, e.point.y + 5]
+            ]);
+            if (features.length > 0) {
+                const hoveredFeature = features[0];
+                const hoveredPointProperties = hoveredFeature.properties;
+                updateHoveredFeatureTable(hoveredPointProperties);
+                if (hoveredFeature.layer.type === 'circle') {
+                    hoveredCircleProperties = hoveredFeature.properties;
+                    updateHoveredCircleTable();
+                }
+            }
+        });
 
-          // Copy coordinates array.
-          const coordinates = e.features[0].geometry.coordinates.slice();
-          const description = e.features[0].properties.description;
-          
-          // Ensure that if the map is zoomed out such that multiple
-          // copies of the feature are visible, the popup appears
-          // over the copy being pointed to.
-          while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
-          coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
-          }
-          
-          // Populate the popup and set its coordinates
-          // based on the feature found.
-          popup.setLngLat(coordinates).setHTML(description).addTo(map);
-          console.log('Hovered Feature ID:', hoveredFeatureId);
-          
-          map.setPaintProperty('vectorLayer', 'circle-stroke-color', ['case', ['==', ['get', 'nom_court'], hoveredFeatureId], 'white', '#40549e']), {
-            transition: { duration: 3000 } // Transition duration in milliseconds
-          };
-          map.setPaintProperty('vectorLayer', 'circle-color', ['case', ['==', ['get', 'nom_court'], hoveredFeatureId], '#566CBB', '#40549e']), {
-            transition: { duration: 3000 } // Transition duration in milliseconds
-          };
-          map.setPaintProperty('vectorLayer', 'circle-radius', ['case', ['==', ['get', 'nom_court'], hoveredFeatureId], 9, 7]), {
-            transition: { duration: 3000 } // Transition duration in milliseconds
-          };
+        map.on('click', 'vectorLayer', (e) => {
+            const coordinates = e.features[0].geometry.coordinates.slice();
+            const description = e.features[0].properties.nom_etablissement;
+            const ville = e.features[0].properties.ville;
+            const adresse = e.features[0].properties.adresse;
+            const url = e.features[0].properties.url;
 
-          // map.setPaintProperty('vectorLayer', 'circle-color', ['case', ['==', ['get', 'id'], hoveredFeatureId], 'red', '#40549e']);
-      });
+            const clickCoordinates = e.lngLat;
 
-      map.on('mouseleave', 'vectorLayer', () => {
-          map.getCanvas().style.cursor = '';
+            console.log("coordinates", coordinates);
+            console.log("clickCoordinates", clickCoordinates);
 
-          
+            while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
+                coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
+            }
 
-      });
-  });
+            new mapboxgl.Popup()
+                .setLngLat(coordinates)
+                .setHTML(`<b>${description}</b><br> ${adresse}, ${ville}</br><a href="${url}">${url}</a>`)
+                .addTo(map);
+        });
 
-  // Function to update the HTML table with hovered feature properties
-  function updateHoveredCircleTable() {
-    hoveredCircleTable.innerHTML = '';
+        map.on('mouseenter', 'vectorLayer', (e) => {
+            map.getCanvas().style.cursor = 'pointer';
 
-    const headerRow = document.createElement('tr');
-    headerRow.style.borderBottom = '1px solid #ccc'; // Add bottom border to header row
+            const hoveredFeature = e.features[0];
+            const hoveredFeatureId = hoveredFeature.properties.nom_court;
 
-    const valueRow = document.createElement('tr');
+            const coordinates = e.features[0].geometry.coordinates.slice();
+            const description = e.features[0].properties.description;
 
-    for (const [key, value] of Object.entries(hoveredCircleProperties)) {
-        const headerCell = document.createElement('th');
-        headerCell.textContent = key;
-        headerCell.style.padding = '8px'; // Add padding to header cell
-        headerCell.style.textAlign = 'center'; // Align text to left in header cell
-        // headerCell.style.borderRight = '1px solid #ccc'; // Add right border to header cell
-        headerCell.style.borderBottom = '1px solid #ccc'; // Add right border to header cell
+            while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
+                coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
+            }
 
-        headerCell.style.backgroundColor = 'white'; // Add right border to header cell
+            console.log('Hovered Feature ID:', hoveredFeatureId);
 
-        headerRow.appendChild(headerCell);
+            map.setPaintProperty('vectorLayer', 'circle-stroke-color', ['case', ['==', ['get', 'nom_court'], hoveredFeatureId], 'white', '#40549e']), {
+                transition: { duration: 3000 }
+            };
+            map.setPaintProperty('vectorLayer', 'circle-color', ['case', ['==', ['get', 'nom_court'], hoveredFeatureId], '#566CBB', '#40549e']), {
+                transition: { duration: 3000 }
+            };
+            map.setPaintProperty('vectorLayer', 'circle-radius', ['case', ['==', ['get', 'nom_court'], hoveredFeatureId], 9, 7]), {
+                transition: { duration: 3000 }
+            };
+        });
 
-        const valueCell = document.createElement('td');
-        valueCell.textContent = value;
-        valueCell.style.padding = '8px'; // Add padding to value cell
-        valueCell.style.textAlign = 'center'; // Align text to left in value cell
-        valueRow.appendChild(valueCell);
+        map.on('mouseleave', 'vectorLayer', () => {
+            map.getCanvas().style.cursor = '';
+        });
+    });
+
+    function createTable(className) {
+        const table = document.createElement('table');
+        table.classList.add(className);
+        document.body.appendChild(table);
+        return table;
     }
 
-    hoveredCircleTable.appendChild(headerRow);
-    hoveredCircleTable.appendChild(valueRow);
+    function updateHoveredCircleTable() {
+        hoveredCircleTable.innerHTML = '';
+        const headerRow = document.createElement('tr');
+        headerRow.style.borderBottom = '1px solid #ccc';
 
-    // Add bottom border to value row
-    valueRow.style.borderBottom = '1px solid #ccc';
-}
+        const valueRow = document.createElement('tr');
 
+        for (const [key, value] of Object.entries(hoveredCircleProperties)) {
+            const headerCell = document.createElement('th');
+            headerCell.textContent = key;
+            headerCell.style.padding = '8px';
+            headerCell.style.textAlign = 'center';
+            headerCell.style.borderBottom = '1px solid #ccc';
+            headerCell.style.backgroundColor = 'white';
+            headerRow.appendChild(headerCell);
 
-// function updateHoveredCircleTable() {
-//   hoveredCircleTable.innerHTML = '';
+            const valueCell = document.createElement('td');
+            valueCell.textContent = value;
+            valueCell.style.padding = '8px';
+            valueCell.style.textAlign = 'center';
+            valueRow.appendChild(valueCell);
+        }
 
-//   // Hardcoded headers row
-//   const headerRow = document.createElement('tr');
-//   headerRow.style.borderBottom = '1px solid #ccc'; // Add bottom border to header row
+        hoveredCircleTable.appendChild(headerRow);
+        hoveredCircleTable.appendChild(valueRow);
+        valueRow.style.borderBottom = '1px solid #ccc';
+    }
 
-//   const headers = ['Header1', 'Header2', 'Header3']; // Replace with your actual header names
+    function updateHoveredFeatureTable(properties) {
+        const table = document.getElementById('hovered-feature-table');
+        table.innerHTML = '';
+        const dataRow = document.createElement('tr');
 
-//   headers.forEach(headerText => {
-//       const headerCell = document.createElement('th');
-//       headerCell.textContent = headerText;
-//       headerCell.style.padding = '8px'; // Add padding to header cell
-//       headerCell.style.textAlign = 'center'; // Align text to center in header cell
-//       headerCell.style.borderRight = '1px solid #ccc'; // Add right border to header cell
-//       headerCell.style.backgroundColor = '#96a4e4'; // Add background color to header cell
-//       headerRow.appendChild(headerCell);
-//   });
+        for (const key in properties) {
+            const dataCell = document.createElement('td');
+            dataCell.textContent = properties[key];
+            dataRow.appendChild(dataCell);
+        }
 
-//   hoveredCircleTable.appendChild(headerRow);
-
-//   // Second row of data
-//   const valueRow = document.createElement('tr');
-//   const values = ['Value1', 'Value2', 'Value3']; // Replace with your actual values
-
-//   values.forEach(valueText => {
-//       const valueCell = document.createElement('td');
-//       valueCell.textContent = valueText;
-//       valueCell.style.padding = '8px'; // Add padding to value cell
-//       valueCell.style.textAlign = 'center'; // Align text to center in value cell
-//       valueRow.appendChild(valueCell);
-//   });
-
-//   hoveredCircleTable.appendChild(valueRow);
-
-//   // Add bottom border to value row
-//   valueRow.style.borderBottom = '1px solid #ccc';
-// }
-
-  function updateHoveredFeatureTable(properties) {
-      const table = document.getElementById('hovered-feature-table');
-
-      // Clear existing table content
-      table.innerHTML = '';
-
-      // Create data row
-      const dataRow = document.createElement('tr');
-      for (const key in properties) {
-          const dataCell = document.createElement('td');
-          dataCell.textContent = properties[key];
-          dataRow.appendChild(dataCell);
-      }
-      table.appendChild(dataRow);
-  }
+        table.appendChild(dataRow);
+    }
 });
-
-
-
-
-
