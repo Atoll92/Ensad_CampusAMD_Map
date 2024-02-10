@@ -92,8 +92,11 @@ document.addEventListener('DOMContentLoaded', function () {
           // based on the feature found.
           popup.setLngLat(coordinates).setHTML(description).addTo(map);
           console.log('Hovered Feature ID:', hoveredFeatureId);
-
+          
           map.setPaintProperty('vectorLayer', 'circle-stroke-color', ['case', ['==', ['get', 'nom_court'], hoveredFeatureId], 'white', '#40549e']), {
+            transition: { duration: 3000 } // Transition duration in milliseconds
+          };
+          map.setPaintProperty('vectorLayer', 'circle-color', ['case', ['==', ['get', 'nom_court'], hoveredFeatureId], '#566CBB', '#40549e']), {
             transition: { duration: 3000 } // Transition duration in milliseconds
           };
           map.setPaintProperty('vectorLayer', 'circle-radius', ['case', ['==', ['get', 'nom_court'], hoveredFeatureId], 9, 7]), {
@@ -106,12 +109,7 @@ document.addEventListener('DOMContentLoaded', function () {
       map.on('mouseleave', 'vectorLayer', () => {
           map.getCanvas().style.cursor = '';
 
-          map.setPaintProperty('vectorLayer', 'circle-color', '#40549e'), {
-            transition: { duration: 3000 } // Transition duration in milliseconds
-          };
-          map.setPaintProperty('vectorLayer', 'circle-radius',  7), {
-            transition: { duration: 3000 } // Transition duration in milliseconds
-          };
+          
 
       });
   });
