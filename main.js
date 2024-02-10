@@ -38,11 +38,20 @@ document.addEventListener('DOMContentLoaded', function () {
               'circle-color': '#40549e',
               'circle-stroke-color': 'white', // Yellow stroke color for hovered circle
               'circle-stroke-width': 1,
+            'circle-opacity': 0.8,
+              'circle-transition': {
+                duration: 300, // Transition duration in milliseconds
+                delay: 0 // Transition delay in milliseconds
+            }
           },
       });
 
       map.on('mousemove', function (e) {
-          const features = map.queryRenderedFeatures(e.point);
+          // const features = map.queryRenderedFeatures(e.point);
+          const features = map.queryRenderedFeatures([
+            [e.point.x - 5, e.point.y - 5], // Decrease x and y by 5 pixels
+            [e.point.x + 5, e.point.y + 5]  // Increase x and y by 5 pixels
+        ]);
           if (features.length > 0) {
               const hoveredFeature = features[0];
               const hoveredPointProperties = hoveredFeature.properties;
@@ -84,8 +93,12 @@ document.addEventListener('DOMContentLoaded', function () {
           popup.setLngLat(coordinates).setHTML(description).addTo(map);
           console.log('Hovered Feature ID:', hoveredFeatureId);
 
-          map.setPaintProperty('vectorLayer', 'circle-color', ['case', ['==', ['get', 'nom_court'], hoveredFeatureId], 'white', '#40549e']);
-          map.setPaintProperty('vectorLayer', 'circle-radius', ['case', ['==', ['get', 'nom_court'], hoveredFeatureId], 9, 7]);
+          map.setPaintProperty('vectorLayer', 'circle-color', ['case', ['==', ['get', 'nom_court'], hoveredFeatureId], 'white', '#40549e']), {
+            transition: { duration: 3000 } // Transition duration in milliseconds
+          };
+          map.setPaintProperty('vectorLayer', 'circle-radius', ['case', ['==', ['get', 'nom_court'], hoveredFeatureId], 9, 7]), {
+            transition: { duration: 3000 } // Transition duration in milliseconds
+          };
 
           // map.setPaintProperty('vectorLayer', 'circle-color', ['case', ['==', ['get', 'id'], hoveredFeatureId], 'red', '#40549e']);
       });
@@ -93,31 +106,90 @@ document.addEventListener('DOMContentLoaded', function () {
       map.on('mouseleave', 'vectorLayer', () => {
           map.getCanvas().style.cursor = '';
 
-          map.setPaintProperty('vectorLayer', 'circle-color', '#40549e');
-          map.setPaintProperty('vectorLayer', 'circle-radius',  7);
+          map.setPaintProperty('vectorLayer', 'circle-color', '#40549e'), {
+            transition: { duration: 3000 } // Transition duration in milliseconds
+          };
+          map.setPaintProperty('vectorLayer', 'circle-radius',  7), {
+            transition: { duration: 3000 } // Transition duration in milliseconds
+          };
 
       });
   });
 
   // Function to update the HTML table with hovered feature properties
   function updateHoveredCircleTable() {
-      hoveredCircleTable.innerHTML = '';
-      const headerRow = document.createElement('tr');
-      const valueRow = document.createElement('tr');
+    hoveredCircleTable.innerHTML = '';
 
-      for (const [key, value] of Object.entries(hoveredCircleProperties)) {
-          const headerCell = document.createElement('th');
-          headerCell.textContent = key;
-          headerRow.appendChild(headerCell);
+    const headerRow = document.createElement('tr');
+    headerRow.style.borderBottom = '1px solid #ccc'; // Add bottom border to header row
 
-          const valueCell = document.createElement('td');
-          valueCell.textContent = value;
-          valueRow.appendChild(valueCell);
-      }
+    const valueRow = document.createElement('tr');
 
-      hoveredCircleTable.appendChild(headerRow);
-      hoveredCircleTable.appendChild(valueRow);
-  }
+    for (const [key, value] of Object.entries(hoveredCircleProperties)) {
+        const headerCell = document.createElement('th');
+        headerCell.textContent = key;
+        headerCell.style.padding = '8px'; // Add padding to header cell
+        headerCell.style.textAlign = 'center'; // Align text to left in header cell
+        // headerCell.style.borderRight = '1px solid #ccc'; // Add right border to header cell
+        headerCell.style.borderBottom = '1px solid #ccc'; // Add right border to header cell
+
+        headerCell.style.backgroundColor = 'white'; // Add right border to header cell
+
+        headerRow.appendChild(headerCell);
+
+        const valueCell = document.createElement('td');
+        valueCell.textContent = value;
+        valueCell.style.padding = '8px'; // Add padding to value cell
+        valueCell.style.textAlign = 'center'; // Align text to left in value cell
+        valueRow.appendChild(valueCell);
+    }
+
+    hoveredCircleTable.appendChild(headerRow);
+    hoveredCircleTable.appendChild(valueRow);
+
+    // Add bottom border to value row
+    valueRow.style.borderBottom = '1px solid #ccc';
+}
+
+
+// function updateHoveredCircleTable() {
+//   hoveredCircleTable.innerHTML = '';
+
+//   // Hardcoded headers row
+//   const headerRow = document.createElement('tr');
+//   headerRow.style.borderBottom = '1px solid #ccc'; // Add bottom border to header row
+
+//   const headers = ['Header1', 'Header2', 'Header3']; // Replace with your actual header names
+
+//   headers.forEach(headerText => {
+//       const headerCell = document.createElement('th');
+//       headerCell.textContent = headerText;
+//       headerCell.style.padding = '8px'; // Add padding to header cell
+//       headerCell.style.textAlign = 'center'; // Align text to center in header cell
+//       headerCell.style.borderRight = '1px solid #ccc'; // Add right border to header cell
+//       headerCell.style.backgroundColor = '#96a4e4'; // Add background color to header cell
+//       headerRow.appendChild(headerCell);
+//   });
+
+//   hoveredCircleTable.appendChild(headerRow);
+
+//   // Second row of data
+//   const valueRow = document.createElement('tr');
+//   const values = ['Value1', 'Value2', 'Value3']; // Replace with your actual values
+
+//   values.forEach(valueText => {
+//       const valueCell = document.createElement('td');
+//       valueCell.textContent = valueText;
+//       valueCell.style.padding = '8px'; // Add padding to value cell
+//       valueCell.style.textAlign = 'center'; // Align text to center in value cell
+//       valueRow.appendChild(valueCell);
+//   });
+
+//   hoveredCircleTable.appendChild(valueRow);
+
+//   // Add bottom border to value row
+//   valueRow.style.borderBottom = '1px solid #ccc';
+// }
 
   function updateHoveredFeatureTable(properties) {
       const table = document.getElementById('hovered-feature-table');
