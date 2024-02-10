@@ -84,7 +84,7 @@ document.addEventListener('DOMContentLoaded', function () {
           popup.setLngLat(coordinates).setHTML(description).addTo(map);
           console.log('Hovered Feature ID:', hoveredFeatureId);
 
-          map.setPaintProperty('vectorLayer', 'circle-color', ['case', ['==', ['get', 'nom_court'], hoveredFeatureId], 'red', '#40549e']);
+          map.setPaintProperty('vectorLayer', 'circle-color', ['case', ['==', ['get', 'nom_court'], hoveredFeatureId], 'white', '#40549e']);
           // map.setPaintProperty('vectorLayer', 'circle-color', ['case', ['==', ['get', 'id'], hoveredFeatureId], 'red', '#40549e']);
       });
 
