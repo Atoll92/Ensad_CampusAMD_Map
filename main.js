@@ -85,6 +85,8 @@ document.addEventListener('DOMContentLoaded', function () {
           console.log('Hovered Feature ID:', hoveredFeatureId);
 
           map.setPaintProperty('vectorLayer', 'circle-color', ['case', ['==', ['get', 'nom_court'], hoveredFeatureId], 'white', '#40549e']);
+          map.setPaintProperty('vectorLayer', 'circle-radius', ['case', ['==', ['get', 'nom_court'], hoveredFeatureId], 9, 7]);
+
           // map.setPaintProperty('vectorLayer', 'circle-color', ['case', ['==', ['get', 'id'], hoveredFeatureId], 'red', '#40549e']);
       });
 
@@ -92,6 +94,8 @@ document.addEventListener('DOMContentLoaded', function () {
           map.getCanvas().style.cursor = '';
 
           map.setPaintProperty('vectorLayer', 'circle-color', '#40549e');
+          map.setPaintProperty('vectorLayer', 'circle-radius',  7);
+
       });
   });
 
