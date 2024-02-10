@@ -93,13 +93,13 @@ document.addEventListener('DOMContentLoaded', function () {
             console.log('Hovered Feature ID:', hoveredFeatureId);
 
             map.setPaintProperty('vectorLayer', 'circle-stroke-color', ['case', ['==', ['get', 'nom_court'], hoveredFeatureId], 'white', '#40549e']), {
-                transition: { duration: 3000 }
+                transition: { duration: 500 }
             };
             map.setPaintProperty('vectorLayer', 'circle-color', ['case', ['==', ['get', 'nom_court'], hoveredFeatureId], '#566CBB', '#40549e']), {
-                transition: { duration: 3000 }
+                transition: { duration: 500 }
             };
             map.setPaintProperty('vectorLayer', 'circle-radius', ['case', ['==', ['get', 'nom_court'], hoveredFeatureId], 9, 7]), {
-                transition: { duration: 3000 }
+                transition: { duration: 500 }
             };
         });
 
