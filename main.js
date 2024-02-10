@@ -8,6 +8,11 @@ document.addEventListener('DOMContentLoaded', function () {
   hoveredCircleTable.classList.add('hovered-circle-table');
   document.body.appendChild(hoveredCircleTable);
 
+  const hoveredPointTable = document.createElement('table');
+hoveredPointTable.classList.add('hovered-point-table');
+document.body.appendChild(hoveredPointTable);
+
+
   let hoveredCircleProperties = {};
   const vectorSource = new VectorLayer({
     url: 'CampusData.geojson',
@@ -37,12 +42,7 @@ document.addEventListener('DOMContentLoaded', function () {
       paint: {
         'circle-radius': 7,
         'circle-color': '#40549e',
-        'circle-stroke-color': [
-          'case',
-          ['==', ['get', 'id'], hoveredFeatureId],
-          'yellow', // Yellow stroke color for hovered circle
-          'black' // Default stroke color
-        ],
+        'circle-stroke-color':'white', // Yellow stroke color for hovered circle
         'circle-stroke-width': 1,
       },
     });
@@ -52,22 +52,45 @@ document.addEventListener('DOMContentLoaded', function () {
       if (features.length > 0) {
         const hoveredFeature = features[0];
         const hoveredFeatureId = hoveredFeature.properties.id;
+        const hoveredPointProperties = hoveredFeature.properties;
+        updateHoveredFeatureTable(hoveredPointProperties);
+        // If the hovered feature is a circle
         if (hoveredFeature.layer.type === 'circle') {
+          const hoveredFeatureNomCourt = hoveredFeature.properties.nom_court;
           hoveredCircleProperties = hoveredFeature.properties;
           updateHoveredCircleTable();
-        } // Define hoveredFeatureId here
-        if (hoveredFeatureId !== hoveredFeatureId) {
-          if (hoveredFeatureId) {
-            map.setFeatureState(
-              { source: 'vectorSource', id: hoveredFeatureId },
-              { hover: false }
-            );
+          // If nom_court property exists, display tooltip
+          if (hoveredFeatureNomCourt) {
+              new mapboxgl.Popup({
+                  closeButton: false,
+                  closeOnClick: false
+              })
+              .setLngLat(e.lngLat)
+              .setHTML(`<p>${hoveredFeatureNomCourt}</p>`)
+              .addTo(map);
           }
-          map.setFeatureState(
-            { source: 'vectorSource', id: hoveredFeatureId },
-            { hover: true }
-          );
-        }
+      } else {
+        // If the hovered feature is not a circle (point), update the point table
+        updateHoveredPointTable(hoveredFeature.properties);
+    }
+
+        // if (hoveredFeature.layer.type === 'circle') {
+        //   hoveredCircleProperties = hoveredFeature.properties;
+        //   updateHoveredCircleTable();
+          
+        // } // Define hoveredFeatureId here
+        // if (hoveredFeatureId !== hoveredFeatureId) {
+        //   if (hoveredFeatureId) {
+        //     map.setFeatureState(
+        //       { source: 'vectorSource', id: hoveredFeatureId },
+        //       { hover: true }
+        //     );
+        //   }
+        //   map.setFeatureState(
+        //     { source: 'vectorSource', id: hoveredFeatureId },
+        //     { hover: false }
+        //   );
+        // }
 
         
       }
@@ -84,9 +107,40 @@ document.addEventListener('DOMContentLoaded', function () {
     //   }
     // });
 
+    // Create a popup, but don't add it to the map yet.
+const popup = new mapboxgl.Popup({
+  closeButton: false,
+  closeOnClick: false
+  });
+   
+  map.on('mouseenter', 'vectorLayer', (e) => {
+  // Change the cursor style as a UI indicator.
+  map.getCanvas().style.cursor = 'pointer';
+   
+  // Copy coordinates array.
+  const coordinates = e.features[0].geometry.coordinates.slice();
+  const description = e.features[0].properties.nom_court;
+   
+  // Ensure that if the map is zoomed out such that multiple
+  // copies of the feature are visible, the popup appears
+  // over the copy being pointed to.
+  while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
+  coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
+  }
+   
+  // Populate the popup and set its coordinates
+  // based on the feature found.
+  popup.setLngLat(coordinates).setHTML(description).addTo(map);
+  });
+   
+  map.on('mouseleave', 'places', () => {
+  map.getCanvas().style.cursor = '';
+  popup.remove();
+  });
+
 
     map.on('mouseleave', function () {
-      
+      map.getCanvas().style.cursor = 'none';
       clearHoveredCircleTable();
       if (hoveredFeatureId) {
         map.setFeatureState(
@@ -106,13 +160,13 @@ document.addEventListener('DOMContentLoaded', function () {
     table.innerHTML = '';
 
     // Create header row
-    const headerRow = document.createElement('tr');
-    for (const key in properties) {
-      const headerCell = document.createElement('th');
-      headerCell.textContent = key;
-      headerRow.appendChild(headerCell);
-    }
-    table.appendChild(headerRow);
+    // const headerRow = document.createElement('tr');
+    // for (const key in properties) {
+    //   const headerCell = document.createElement('th');
+    //   headerCell.textContent = key;
+    //   headerRow.appendChild(headerCell);
+    // }
+    // table.appendChild(headerRow);
 
     // Create data row
     const dataRow = document.createElement('tr');
@@ -142,4 +196,34 @@ document.addEventListener('DOMContentLoaded', function () {
     hoveredCircleProperties = {};
     hoveredCircleTable.innerHTML = '';
   }
+
+  function updateHoveredPointTable(properties) {
+    const table = document.getElementById('hovered-point-table');
+  
+    // Clear existing table content
+    table.innerHTML = '';
+  
+    // Create header row
+    const headerRow = document.createElement('tr');
+    const headerCellKey = document.createElement('th');
+    headerCellKey.textContent = 'Property';
+    headerRow.appendChild(headerCellKey);
+    const headerCellValue = document.createElement('th');
+    headerCellValue.textContent = 'Value';
+    headerRow.appendChild(headerCellValue);
+    table.appendChild(headerRow);
+  
+    // Create data rows for each property
+    for (const [key, value] of Object.entries(properties)) {
+      const row = document.createElement('tr');
+      const cellKey = document.createElement('td');
+      cellKey.textContent = key;
+      const cellValue = document.createElement('td');
+      cellValue.textContent = value;
+      row.appendChild(cellKey);
+      row.appendChild(cellValue);
+      table.appendChild(row);
+    }
+  }
+  
 });
