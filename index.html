@@ -21,6 +21,14 @@
       .mapboxgl-ctrl-attrib {
   display: none;
 }
+.hovered-circle-table  th {
+  padding-top: 5px;
+
+  padding-bottom: 5px;
+}
+.hovered-circle-table td, th {
+  padding: 5px;
+}
 .hovered-circle-table {
   position: absolute;
   top: 800px;
@@ -29,7 +37,10 @@
   background: white;
   font-size:12px;
   text-align: center;
-  margin-top: 10px;
+  /* margin-top: 10px; */
+  /* border-spacing: 0 1em; */
+  border-collapse: collapse;
+  border:solid 1px black;
 }
 
 #hovered-feature-table {

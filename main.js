@@ -120,7 +120,7 @@ document.addEventListener('DOMContentLoaded', function () {
     function createTable(className) {
         const table = document.createElement('table');
         table.classList.add(className);
-        table.style.borderCollapse = 'collapse';
+        // table.style.borderCollapse = 'collapse';
         document.body.appendChild(table);
         return table;
     }
@@ -158,6 +158,7 @@ document.addEventListener('DOMContentLoaded', function () {
             if (index === 0) {
                 valueRow.style.backgroundColor = 'white'; // Light gray background
                 valueRow.style.fontWeight = 'bold';
+                valueRow.style.paddingBottom = '1rem';
                 valueRow.style.border = 'solid 1px black'; // Bold font weight
             }
             
