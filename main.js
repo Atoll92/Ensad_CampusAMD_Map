@@ -4,7 +4,6 @@ document.addEventListener('DOMContentLoaded', function () {
     mapboxgl.accessToken = 'pk.eyJ1IjoiZGdjb2Jvc3MiLCJhIjoiY2xzY2JnajIzMGZsNzJpcGM4b3l5OWttaCJ9.1GzkF8EERgQ5u1jkmP3C7w';
 
     const hoveredCircleTable = createTable('hovered-circle-table');
-    const hoveredPointTable = createTable('hovered-point-table');
 
     let hoveredCircleProperties = {};
     let campusDataFeatures = [];
@@ -43,15 +42,15 @@ document.addEventListener('DOMContentLoaded', function () {
         map.on('data', function (e) {
           if (e.sourceId === 'vectorSource') {
               campusDataFeatures = map.querySourceFeatures('vectorSource');
-              updateCampusDataTable();
-              console/log("campusDataFeatures" + campusDataFeatures)
+            //   updateCampusDataTable();
+            //   console.log("campusDataFeatures" + campusDataFeatures)
           }
       });
 
         map.on('mousemove', function (e) {
             const features = map.queryRenderedFeatures([
-                [e.point.x - 5, e.point.y - 5],
-                [e.point.x + 5, e.point.y + 5]
+                [e.point.x - 2, e.point.y - 2],
+                [e.point.x + 2, e.point.y + 2]
             ]);
             if (features.length > 0) {
                 const hoveredFeature = features[0];
