@@ -3,11 +3,6 @@ import mapboxgl from 'mapbox-gl';
 document.addEventListener('DOMContentLoaded', function () {
     mapboxgl.accessToken = 'pk.eyJ1IjoiZGdjb2Jvc3MiLCJhIjoiY2xzY2JnajIzMGZsNzJpcGM4b3l5OWttaCJ9.1GzkF8EERgQ5u1jkmP3C7w';
 
-    const hoveredCircleTable = createTable('hovered-circle-table');
-
-    let hoveredCircleProperties = {};
-    let campusDataFeatures = [];
-
     const map = new mapboxgl.Map({
         container: 'map',
         style: 'mapbox://styles/dgcoboss/clsf6yac1008601qxfmtfhiu6',
@@ -16,10 +11,13 @@ document.addEventListener('DOMContentLoaded', function () {
         projection: 'mercator',
     });
 
+    const filterOptions = ["Retail", "Hotel", "Office", "Restaurant/bar", "Cultural space", "Private residence", "Urban space/Transportation"];
+    let selectedFilter = null;
+
     map.on('load', function () {
         map.addSource('vectorSource', {
             type: 'geojson',
-            data: 'CampusData.geojson',
+            data: 'output.geojson',
         });
 
         map.addLayer({
@@ -39,148 +37,135 @@ document.addEventListener('DOMContentLoaded', function () {
             },
         });
 
-        map.on('data', function (e) {
-          if (e.sourceId === 'vectorSource') {
-              campusDataFeatures = map.querySourceFeatures('vectorSource');
-            //   updateCampusDataTable();
-            //   console.log("campusDataFeatures" + campusDataFeatures)
-          }
-      });
+        // Create the filter buttons container
+        const filterContainer = document.createElement('div');
+        filterContainer.style.position = 'absolute';
+        filterContainer.style.top = '10px';
+        filterContainer.style.right = '10px';
+        filterContainer.style.backgroundColor = 'white';
+        filterContainer.style.padding = '10px';
+        filterContainer.style.borderRadius = '5px';
+        filterContainer.style.boxShadow = '0 1px 3px rgba(0,0,0,0.3)';
+        filterContainer.style.fontFamily = 'Arial, sans-serif';
+        filterContainer.style.fontSize = '13px';
 
-        map.on('mousemove', function (e) {
-            const features = map.queryRenderedFeatures([
-                [e.point.x - 2, e.point.y - 2],
-                [e.point.x + 2, e.point.y + 2]
-            ]);
-            if (features.length > 0) {
-                const hoveredFeature = features[0];
-                const hoveredPointProperties = hoveredFeature.properties;
-                updateHoveredFeatureTable(hoveredPointProperties);
-                if (hoveredFeature.layer.type === 'circle') {
-                    hoveredCircleProperties = hoveredFeature.properties;
-                    updateHoveredCircleTable();
-                }
-            }
+        // Create filter buttons
+        filterOptions.forEach(option => {
+            const button = document.createElement('button');
+            button.textContent = option;
+            button.style.display = 'block';
+            button.style.marginBottom = '5px';
+            button.style.padding = '5px';
+            button.style.backgroundColor = '#40549e';
+            button.style.color = 'white';
+            button.style.border = 'none';
+            button.style.cursor = 'pointer';
+            button.style.borderRadius = '3px';
+
+            // Add click event to filter by option
+            button.addEventListener('click', () => {
+                selectedFilter = option;
+                applyFilter();
+            });
+
+            filterContainer.appendChild(button);
         });
+
+        // Reset button to clear filter
+        const resetButton = document.createElement('button');
+        resetButton.textContent = 'Show All';
+        resetButton.style.display = 'block';
+        resetButton.style.padding = '5px';
+        resetButton.style.backgroundColor = 'gray';
+        resetButton.style.color = 'white';
+        resetButton.style.border = 'none';
+        resetButton.style.cursor = 'pointer';
+        resetButton.style.borderRadius = '3px';
+        resetButton.addEventListener('click', () => {
+            selectedFilter = null;
+            applyFilter();
+        });
+        filterContainer.appendChild(resetButton);
+
+        document.body.appendChild(filterContainer);
+
+        function applyFilter() {
+            if (selectedFilter) {
+                map.setFilter('vectorLayer', ['==', ['get', 'points_of_interest'], selectedFilter]);
+            } else {
+                map.setFilter('vectorLayer', null); // Reset filter to show all features
+            }
+        }
 
         map.on('click', 'vectorLayer', (e) => {
             const coordinates = e.features[0].geometry.coordinates.slice();
-            const description = e.features[0].properties.nom_etablissement;
-            const ville = e.features[0].properties.ville;
-            const adresse = e.features[0].properties.adresse;
-            const url = e.features[0].properties.url;
+            const properties = e.features[0].properties;
 
-            const clickCoordinates = e.lngLat;
+            // Extract and prepare images for slider
+            const imageUrls = properties.photos_projet.split(',').map(url => url.trim());
+            const sliderHTML = imageUrls.length > 1 ? createSliderHTML(imageUrls) : `<img src="${imageUrls[0]}" style="width: 100%; height: auto; display: block; margin-bottom: 10px;" alt="Project Image">`;
 
-            console.log("coordinates", coordinates);
-            console.log("clickCoordinates", clickCoordinates);
+            // Create properties HTML
+            const propertiesHTML = Object.entries(properties).map(
+                ([key, value]) => `<strong>${key}</strong>: ${value || 'N/A'}`
+            ).join('<br>');
+
+            const popupContent = `${sliderHTML}${propertiesHTML}`;
 
             while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
                 coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
             }
 
-            new mapboxgl.Popup()
+            const popup = new mapboxgl.Popup()
                 .setLngLat(coordinates)
-                .setHTML(`<b>${description}</b><br> ${adresse}, ${ville}</br><a href="${url}">${url}</a>`)
+                .setHTML(popupContent)
                 .addTo(map);
-        });
 
-        map.on('mouseenter', 'vectorLayer', (e) => {
-            map.getCanvas().style.cursor = 'pointer';
-
-            const hoveredFeature = e.features[0];
-            const hoveredFeatureId = hoveredFeature.properties.nom_court;
-
-            const coordinates = e.features[0].geometry.coordinates.slice();
-            const description = e.features[0].properties.description;
-
-            while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
-                coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
-            }
-
-            console.log('Hovered Feature ID:', hoveredFeatureId);
-
-            map.setPaintProperty('vectorLayer', 'circle-stroke-color', ['case', ['==', ['get', 'nom_court'], hoveredFeatureId], 'white', '#40549e']), {
-                transition: { duration: 500 }
-            };
-            map.setPaintProperty('vectorLayer', 'circle-color', ['case', ['==', ['get', 'nom_court'], hoveredFeatureId], '#566CBB', '#40549e']), {
-                transition: { duration: 500 }
-            };
-            map.setPaintProperty('vectorLayer', 'circle-radius', ['case', ['==', ['get', 'nom_court'], hoveredFeatureId], 9, 7]), {
-                transition: { duration: 500 }
-            };
-        });
-
-        map.on('mouseleave', 'vectorLayer', () => {
-            map.getCanvas().style.cursor = '';
+            initializeSlider(popup);
         });
     });
 
-    function createTable(className) {
-        const table = document.createElement('table');
-        table.classList.add(className);
-        // table.style.borderCollapse = 'collapse';
-        document.body.appendChild(table);
-        return table;
+    function createSliderHTML(imageUrls) {
+        return `
+            <div class="slider-container">
+                <button class="slider-btn left">&#10094;</button>
+                <div class="slider-images">
+                    ${imageUrls.map((url, index) => `<img src="${url}" class="slider-image" style="width:100%; display: ${index === 0 ? 'block' : 'none'};">`).join('')}
+                </div>
+                <button class="slider-btn right">&#10095;</button>
+            </div>
+            <style>
+                .slider-container { position: relative; width: 100%; }
+                .slider-btn { position: absolute; top: 50%; width: auto; padding: 16px; color: white; font-weight: bold; background-color: rgba(0, 0, 0, 0.5); border: none; cursor: pointer; }
+                .slider-btn.left { left: 0; }
+                .slider-btn.right { right: 0; }
+                .slider-images { display: flex; overflow: hidden; }
+                .slider-image { display: none; width: 100%; }
+            </style>
+        `;
     }
 
-    function updateHoveredCircleTable() {
-        hoveredCircleTable.innerHTML = '';
-    
-        // Define the columns to include
-        const columnsToInclude = ['nom_etablissement', 'adresse', 'ville', 'code_postal', 'type_etablissement', 'mode', 'metiers_art', 'design'];
-    
-        // Create header row
-        const headerRow = document.createElement('tr');
-        headerRow.style.color = '#40549e';
-        headerRow.style.fontSize = '15px';
-        headerRow.style.marginTop = '15px';
+    function initializeSlider(popup) {
+        const popupContainer = popup.getElement();
+        const images = popupContainer.querySelectorAll('.slider-image');
+        const nextBtn = popupContainer.querySelector('.slider-btn.right');
+        const prevBtn = popupContainer.querySelector('.slider-btn.left');
+        let currentIndex = 0;
 
-        columnsToInclude.forEach(column => {
-            const headerCell = document.createElement('th');
-            headerCell.textContent = column;
-            headerRow.appendChild(headerCell);
-        });
-        hoveredCircleTable.appendChild(headerRow);
-    
-        // Create rows for each feature
-        const allFeatures = [hoveredCircleProperties, ...campusDataFeatures.map(feature => feature.properties)];
-        allFeatures.forEach((featureProperties, index) => {
-            const valueRow = document.createElement('tr');
-            columnsToInclude.forEach(column => {
-                const valueCell = document.createElement('td');
-                valueCell.textContent = featureProperties[column] || ''; // Handle cases where the property may be undefined
-                valueRow.appendChild(valueCell);
+        function showImage(index) {
+            images.forEach((img, i) => {
+                img.style.display = i === index ? 'block' : 'none';
             });
-            
-            // Style the first row (currently hovered feature) differently
-            if (index === 0) {
-                valueRow.style.backgroundColor = 'white'; // Light gray background
-                valueRow.style.fontWeight = 'bold';
-                valueRow.style.paddingBottom = '1rem';
-                valueRow.style.border = 'solid 1px black'; // Bold font weight
-            }
-            
-            hoveredCircleTable.appendChild(valueRow);
-        });
-    }
-    
-  
-
-    function updateHoveredFeatureTable(properties) {
-        const table = document.getElementById('hovered-feature-table');
-        table.innerHTML = '';
-        const dataRow = document.createElement('tr');
-
-        for (const key in properties) {
-            const dataCell = document.createElement('td');
-            dataCell.textContent = properties[key];
-            dataRow.appendChild(dataCell);
         }
 
-        table.appendChild(dataRow);
+        nextBtn.addEventListener('click', () => {
+            currentIndex = (currentIndex + 1) % images.length;
+            showImage(currentIndex);
+        });
+
+        prevBtn.addEventListener('click', () => {
+            currentIndex = (currentIndex - 1 + images.length) % images.length;
+            showImage(currentIndex);
+        });
     }
-
-    
-
 });
