@@ -11,10 +11,51 @@ document.addEventListener('DOMContentLoaded', function () {
         projection: 'mercator',
     });
 
-    const filterOptions = ["Retail", "Hotel", "Office", "Restaurant/bar", "Cultural space", "Private residence", "Urban space/Transportation"];
-    let selectedFilter = null;
+    function addLogoOverlay() {
+        const logo = document.createElement('img');
+        logo.src = 'logomap.svg';
+        logo.alt = 'Map Logo';
+        logo.id = 'logo-overlay';
+        logo.style.position = 'absolute';
+        logo.style.top = '10px';
+        logo.style.left = '10px';
+        logo.style.width = '100px';
+        logo.style.height = '100px';
+        logo.style.zIndex = '1';
+        logo.style.cursor = 'pointer';
+
+        document.getElementById('map').appendChild(logo);
+    }
+
+    const pointsOfInterestOptions = [
+        "Retail", "Hotel", "Office", "Restaurant/bar",
+        "Cultural space", "Private residence", "Urban space/Transportation"
+    ];
+
+    const designEventsOptions = [
+        "Business France", "Paris Design Week 2023", "Design Miami",
+        "Downtown Design Dubaï", "ICFF + WantedDesign Manhattan",
+        "In the City", "Milan Design Week 2022", "Villa Albertine"
+    ];
+
+    const designPointsOfSalesOptions = [
+        "Art de Vivre", "Atelier Bam Design", "Atelier George", "Bernardaud", "Bibelo",
+        "Bruno Moinard Editions", "Coedition", "Collectional", "Cuisines Morel", "Devialet",
+        "Drugeot", "Fermob", "Forestier", "Gautier", "Habitat", "Henryot & Cie 1867", "Ibride",
+        "Kann Design", "La Chance", "La Manufacture", "Lafuma Mobilier", "Le Point D", "Lelièvre",
+        "Liaigre", "Maison Dada", "Maison Pouenat", "Manufacture de Février", 
+        "Manufacture de Tapis de Bourgogne", "Manufacture des Emaux De Longwy 1798", 
+        "Moissonnier", "NOMA", "Par Excellence", "Petite Friture", "Philippe Hurel", 
+        "Plumbum", "Red Edition", "Roche Bobois", "Semeur d'Etoiles", "Smarin", "Stamp", "Tolix"
+    ];
+
+    let selectedPointsOfInterest = null;
+    let selectedDesignEvent = null;
+    let selectedDesignPointsOfSales = null;
 
     map.on('load', function () {
+        addLogoOverlay();
+
         map.addSource('vectorSource', {
             type: 'geojson',
             data: 'output.geojson',
@@ -25,8 +66,8 @@ document.addEventListener('DOMContentLoaded', function () {
             type: 'circle',
             source: 'vectorSource',
             paint: {
-                'circle-radius': 7,
-                'circle-color': '#40549e',
+                'circle-radius': 4,
+                'circle-color': '#1534da',
                 'circle-stroke-color': 'black',
                 'circle-stroke-width': 1,
                 'circle-opacity': 0.8,
@@ -37,92 +78,143 @@ document.addEventListener('DOMContentLoaded', function () {
             },
         });
 
-        // Create the filter buttons container
-        const filterContainer = document.createElement('div');
-        filterContainer.style.position = 'absolute';
-        filterContainer.style.top = '10px';
-        filterContainer.style.right = '10px';
-        filterContainer.style.backgroundColor = 'white';
-        filterContainer.style.padding = '10px';
-        filterContainer.style.borderRadius = '5px';
-        filterContainer.style.boxShadow = '0 1px 3px rgba(0,0,0,0.3)';
-        filterContainer.style.fontFamily = 'Arial, sans-serif';
-        filterContainer.style.fontSize = '13px';
+        createFilterContainer();
+        createToggleableFilter('Points of Interest', pointsOfInterestOptions, onPointsOfInterestFilter);
+        createToggleableFilter('Design Events', designEventsOptions, onDesignEventsFilter);
+        createToggleableFilter('Design Points of Sales', designPointsOfSalesOptions, onDesignPointsOfSalesFilter);
 
-        // Create filter buttons
-        filterOptions.forEach(option => {
-            const button = document.createElement('button');
-            button.textContent = option;
-            button.style.display = 'block';
-            button.style.marginBottom = '5px';
-            button.style.padding = '5px';
-            button.style.backgroundColor = '#40549e';
-            button.style.color = 'white';
-            button.style.border = 'none';
-            button.style.cursor = 'pointer';
-            button.style.borderRadius = '3px';
+        function createFilterContainer() {
+            const filterContainer = document.createElement('div');
+            filterContainer.id = 'filter-container';
+            filterContainer.style.position = 'absolute';
+            filterContainer.style.top = '10px';
+            filterContainer.style.right = '10px';
+            filterContainer.style.backgroundColor = 'white';
+            filterContainer.style.padding = '10px';
+            filterContainer.style.borderRadius = '5px';
+            filterContainer.style.boxShadow = '0 1px 3px rgba(0,0,0,0.3)';
+            filterContainer.style.fontFamily = 'Arial, sans-serif';
+            filterContainer.style.fontSize = '13px';
+            filterContainer.style.maxHeight = '100%';
+            filterContainer.style.overflow = 'scroll';
+            document.body.appendChild(filterContainer);
+        }
 
-            // Add click event to filter by option
-            button.addEventListener('click', () => {
-                selectedFilter = option;
-                applyFilter();
+        function createToggleableFilter(title, options, filterFunction) {
+            const filterContainer = document.getElementById('filter-container');
+
+            const titleElement = document.createElement('div');
+            titleElement.style.fontWeight = 'bold';
+            titleElement.style.color = '#40549e';
+            titleElement.style.cursor = 'pointer';
+
+            const toggleButton = document.createElement('span');
+            toggleButton.textContent = '+';
+            toggleButton.style.marginRight = '5px';
+
+            titleElement.appendChild(toggleButton);
+            titleElement.appendChild(document.createTextNode(title));
+            filterContainer.appendChild(titleElement);
+
+            const optionsContainer = document.createElement('div');
+            optionsContainer.style.display = 'none';
+            optionsContainer.style.paddingLeft = '15px';
+
+            options.forEach(option => {
+                const button = document.createElement('button');
+                button.textContent = option;
+                button.style.display = 'block';
+                button.style.marginBottom = '5px';
+                button.style.padding = '5px';
+                button.style.backgroundColor = '#40549e';
+                button.style.color = 'white';
+                button.style.border = 'none';
+                button.style.cursor = 'pointer';
+                button.style.borderRadius = '3px';
+
+                button.addEventListener('click', () => filterFunction(option));
+                optionsContainer.appendChild(button);
             });
 
-            filterContainer.appendChild(button);
-        });
+            titleElement.addEventListener('click', () => {
+                const isHidden = optionsContainer.style.display === 'none';
+                optionsContainer.style.display = isHidden ? 'block' : 'none';
+                toggleButton.textContent = isHidden ? '-' : '+';
+            });
 
-        // Reset button to clear filter
-        const resetButton = document.createElement('button');
-        resetButton.textContent = 'Show All';
-        resetButton.style.display = 'block';
-        resetButton.style.padding = '5px';
-        resetButton.style.backgroundColor = 'gray';
-        resetButton.style.color = 'white';
-        resetButton.style.border = 'none';
-        resetButton.style.cursor = 'pointer';
-        resetButton.style.borderRadius = '3px';
-        resetButton.addEventListener('click', () => {
-            selectedFilter = null;
-            applyFilter();
-        });
-        filterContainer.appendChild(resetButton);
+            filterContainer.appendChild(optionsContainer);
+        }
 
-        document.body.appendChild(filterContainer);
+        function onPointsOfInterestFilter(option) {
+            selectedPointsOfInterest = option;
+            resetOtherFilters('pointsOfInterest');
+            applyFilters();
+        }
 
-        function applyFilter() {
-            if (selectedFilter) {
-                map.setFilter('vectorLayer', ['==', ['get', 'points_of_interest'], selectedFilter]);
-            } else {
-                map.setFilter('vectorLayer', null); // Reset filter to show all features
+        function onDesignEventsFilter(option) {
+            selectedDesignEvent = option;
+            resetOtherFilters('designEvent');
+            applyFilters();
+        }
+
+        function onDesignPointsOfSalesFilter(option) {
+            selectedDesignPointsOfSales = option;
+            resetOtherFilters('pointsOfSales');
+            applyFilters();
+        }
+
+        function resetOtherFilters(callingFilter) {
+            if (callingFilter !== 'pointsOfInterest') {
+                selectedPointsOfInterest = null;
+            }
+            if (callingFilter !== 'designEvent') {
+                selectedDesignEvent = null;
+            }
+            if (callingFilter !== 'pointsOfSales') {
+                selectedDesignPointsOfSales = null;
             }
         }
 
-        map.on('click', 'vectorLayer', (e) => {
-            const coordinates = e.features[0].geometry.coordinates.slice();
-            const properties = e.features[0].properties;
+        function applyFilters() {
+            const filters = ['all'];
 
-            // Extract and prepare images for slider
-            const imageUrls = properties.photos_projet.split(',').map(url => url.trim());
-            const sliderHTML = imageUrls.length > 1 ? createSliderHTML(imageUrls) : `<img src="${imageUrls[0]}" style="width: 100%; height: auto; display: block; margin-bottom: 10px;" alt="Project Image">`;
-
-            // Create properties HTML
-            const propertiesHTML = Object.entries(properties).map(
-                ([key, value]) => `<strong>${key}</strong>: ${value || 'N/A'}`
-            ).join('<br>');
-
-            const popupContent = `${sliderHTML}${propertiesHTML}`;
-
-            while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
-                coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
+            if (selectedPointsOfInterest) {
+                filters.push(['==', ['get', 'points_of_interest'], selectedPointsOfInterest]);
+            }
+            if (selectedDesignEvent) {
+                filters.push(['==', ['get', 'design_events'], selectedDesignEvent]);
+            }
+            if (selectedDesignPointsOfSales) {
+                filters.push(['==', ['get', 'design_points_of_sales'], selectedDesignPointsOfSales]);
             }
 
-            const popup = new mapboxgl.Popup()
-                .setLngLat(coordinates)
-                .setHTML(popupContent)
-                .addTo(map);
+            map.setFilter('vectorLayer', filters.length > 1 ? filters : null); 
+        }
+    });
 
-            initializeSlider(popup);
-        });
+    map.on('click', 'vectorLayer', (e) => {
+        const coordinates = e.features[0].geometry.coordinates.slice();
+        const properties = e.features[0].properties;
+
+        const imageUrls = properties.photos_projet.split(',').map(url => url.trim());
+        const sliderHTML = imageUrls.length > 1 ? createSliderHTML(imageUrls) : `<img src="${imageUrls[0]}" style="width: 100%; height: auto; display: block; margin-bottom: 10px;" alt="Project Image">`;
+
+        const propertiesHTML = Object.entries(properties).map(
+            ([key, value]) => `<strong>${key}</strong>: ${value || 'N/A'}`
+        ).join('<br>');
+
+        const popupContent = `${sliderHTML}${propertiesHTML}`;
+
+        while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
+            coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
+        }
+
+        const popup = new mapboxgl.Popup()
+            .setLngLat(coordinates)
+            .setHTML(popupContent)
+            .addTo(map);
+
+        initializeSlider(popup);
     });
 
     function createSliderHTML(imageUrls) {
