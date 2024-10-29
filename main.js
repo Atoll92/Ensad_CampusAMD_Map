@@ -11,6 +11,23 @@ document.addEventListener('DOMContentLoaded', function () {
         projection: 'mercator',
     });
 
+    // Create sidebar
+    const sidebar = document.createElement('div');
+    sidebar.id = 'sidebar';
+    sidebar.style.position = 'absolute';
+    sidebar.style.top = '20%';
+    sidebar.style.left = '10px';
+    sidebar.style.width = '300px'; // Adjust width as needed
+    sidebar.style.height = '80%';
+    sidebar.style.backgroundColor = 'white';
+    sidebar.style.padding = '10px';
+    sidebar.style.borderRadius = '5px';
+    sidebar.style.boxShadow = '0 1px 3px rgba(0,0,0,0.3)';
+    sidebar.style.overflowY = 'auto';
+    sidebar.style.zIndex = '1';
+    sidebar.style.display = 'none'; // Hide the sidebar initially
+    document.body.appendChild(sidebar);
+
     function addLogoOverlay() {
         const logo = document.createElement('img');
         logo.src = 'logomap.svg';
@@ -193,9 +210,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     map.on('click', 'vectorLayer', (e) => {
-        const coordinates = e.features[0].geometry.coordinates.slice();
         const properties = e.features[0].properties;
-
         const imageUrls = properties.photos_projet.split(',').map(url => url.trim());
         const sliderHTML = imageUrls.length > 1 ? createSliderHTML(imageUrls) : `<img src="${imageUrls[0]}" style="width: 100%; height: auto; display: block; margin-bottom: 10px;" alt="Project Image">`;
 
@@ -203,18 +218,10 @@ document.addEventListener('DOMContentLoaded', function () {
             ([key, value]) => `<strong>${key}</strong>: ${value || 'N/A'}`
         ).join('<br>');
 
-        const popupContent = `${sliderHTML}${propertiesHTML}`;
-
-        while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
-            coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
-        }
-
-        const popup = new mapboxgl.Popup()
-            .setLngLat(coordinates)
-            .setHTML(popupContent)
-            .addTo(map);
-
-        initializeSlider(popup);
+        // Populate sidebar with content
+        sidebar.innerHTML = `${sliderHTML}${propertiesHTML}`;
+        sidebar.style.display = 'block'; // Show the sidebar when a feature is clicked
+        initializeSlider(); // Initialize the slider in the sidebar
     });
 
     function createSliderHTML(imageUrls) {
@@ -237,11 +244,10 @@ document.addEventListener('DOMContentLoaded', function () {
         `;
     }
 
-    function initializeSlider(popup) {
-        const popupContainer = popup.getElement();
-        const images = popupContainer.querySelectorAll('.slider-image');
-        const nextBtn = popupContainer.querySelector('.slider-btn.right');
-        const prevBtn = popupContainer.querySelector('.slider-btn.left');
+    function initializeSlider() {
+        const images = sidebar.querySelectorAll('.slider-image');
+        const nextBtn = sidebar.querySelector('.slider-btn.right');
+        const prevBtn = sidebar.querySelector('.slider-btn.left');
         let currentIndex = 0;
 
         function showImage(index) {
