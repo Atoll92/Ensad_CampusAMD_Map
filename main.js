@@ -209,20 +209,20 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    map.on('click', 'vectorLayer', (e) => {
-        const properties = e.features[0].properties;
-        const imageUrls = properties.photos_projet.split(',').map(url => url.trim());
-        const sliderHTML = imageUrls.length > 1 ? createSliderHTML(imageUrls) : `<img src="${imageUrls[0]}" style="width: 100%; height: auto; display: block; margin-bottom: 10px;" alt="Project Image">`;
+    // map.on('click', 'vectorLayer', (e) => {
+    //     const properties = e.features[0].properties;
+    //     const imageUrls = properties.photos_projet.split(',').map(url => url.trim());
+    //     const sliderHTML = imageUrls.length > 1 ? createSliderHTML(imageUrls) : `<img src="${imageUrls[0]}" style="width: 100%; height: auto; display: block; margin-bottom: 10px;" alt="Project Image">`;
 
-        const propertiesHTML = Object.entries(properties).map(
-            ([key, value]) => `<strong>${key}</strong>: ${value || 'N/A'}`
-        ).join('<br>');
+    //     const propertiesHTML = Object.entries(properties).map(
+    //         ([key, value]) => `<strong>${key}</strong>: ${value || 'N/A'}`
+    //     ).join('<br>');
 
-        // Populate sidebar with content
-        sidebar.innerHTML = `${sliderHTML}${propertiesHTML}`;
-        sidebar.style.display = 'block'; // Show the sidebar when a feature is clicked
-        initializeSlider(); // Initialize the slider in the sidebar
-    });
+    //     // Populate sidebar with content
+    //     sidebar.innerHTML = `${sliderHTML}${propertiesHTML}`;
+    //     sidebar.style.display = 'block'; // Show the sidebar when a feature is clicked
+    //     initializeSlider(); // Initialize the slider in the sidebar
+    // });
 
     function createSliderHTML(imageUrls) {
         return `
